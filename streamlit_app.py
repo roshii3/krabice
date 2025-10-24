@@ -34,11 +34,13 @@ if "krok" not in st.session_state:
 if st.session_state["krok"] == 1:
     st.title("👷‍♂️ Identifikácia kontrolóra")
 
-    meno = st.text_input("Skenuj QR kód s menom", key="meno", placeholder="Naskenuj meno...")
+   
+    meno = st.text_input("Skenuj QR kód s menom", key="meno_input", placeholder="Naskenuj meno...")
     if meno:
         st.session_state["meno"] = meno
         st.session_state["krok"] = 2
         st.rerun()
+
 
 # ---------- KROK 2 – ČÍSLO PALETY ----------
 elif st.session_state["krok"] == 2:
