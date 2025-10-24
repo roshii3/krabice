@@ -1,6 +1,8 @@
-streamlit
+
 sqlalchemy
 psycopg2-binary
 python-dotenv
-supabase
 experimental_rerun
+streamlit>=1.36.0
+supabase-py
+
