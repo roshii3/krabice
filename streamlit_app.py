@@ -3,8 +3,8 @@ from supabase import create_client, Client
 import datetime
 
 # ---------- KONFIGURÁCIA ----------
-DATABAZA_URL  = st.secrets["SUPABASE_URL"]
-DATABAZA_KEY  = st.secrets["SUPABASE_KEY"]
+DATABAZA_URL  = st.secrets["DATABAZA_URL"]
+DATABAZA_KEY  = st.secrets["DATABAZA_KEY"]
 Client = create_client(DATABAZA_URL , DATABAZA_KEY )
 
 st.set_page_config(page_title="Palety", page_icon="📦", layout="centered")
