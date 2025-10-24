@@ -1,16 +1,3 @@
-# --- Streamlit ---
 streamlit==1.38.0
-
-# --- Supabase client (všetko v jednom balíku) ---
-supabase==2.5.1
-
-# --- Dátové knižnice ---
-pandas==2.2.3
-python-dateutil==2.9.0.post0
-
-# --- Ostatné závislosti, ktoré Supabase vyžaduje ---
-httpx==0.27.2
-cryptography==43.0.1
-pyzbar==0.1.9
-Pillow==10.1.0
-experimental_rerun
+supabase-py==2.3.2
+python-dotenv==1.0.0
