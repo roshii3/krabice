@@ -46,25 +46,35 @@ if st.session_state["krok"] == 1:
 elif st.session_state["krok"] == 2:
     st.title("📦 Zadaj číslo palety")
 
-    paleta_id = st.text_input("Skenuj čiarový kód palety", key="paleta_id", placeholder="Skenuj alebo zadaj...")
+    paleta_vstup = st.text_input("Skenuj čiarový kód palety", key="paleta_input", placeholder="Skenuj alebo použi tlačidlá...")
+
+    if paleta_vstup:
+        st.session_state["paleta_id"] = paleta_vstup
 
     st.markdown("### Alebo použi dotykovú klávesnicu:")
     cols = st.columns(3)
-    for i, cislo in enumerate(["1","2","3","4","5","6","7","8","9","0"]):
-        if cols[i % 3].button(cislo, use_container_width=True):
-            st.session_state["paleta_id"] = st.session_state.get("paleta_id", "") + cislo
+    cisla = ["1","2","3","4","5","6","7","8","9","0"]
+
+    for i, cislo in enumerate(cisla):
+        if cols[i % 3].button(cislo, key=f"btn_{cislo}", use_container_width=True):
+            # najprv si načítame aktuálny reťazec a aktualizujeme ho bezpečne
+            aktualne = st.session_state.get("paleta_id", "")
+            nove = aktualne + cislo
+            st.session_state.update({"paleta_id": nove})
             st.rerun()
 
     colA, colB = st.columns(2)
     if colA.button("❌ Storno", use_container_width=True):
-        st.session_state["paleta_id"] = ""
+        st.session_state.update({"paleta_id": ""})
         st.rerun()
     if colB.button("✅ Potvrdiť", use_container_width=True):
-        if st.session_state.get("paleta_id"):
+        if st.session_state["paleta_id"]:
             st.session_state["krok"] = 3
             st.rerun()
         else:
             st.warning("Najprv zadaj číslo palety.")
+
+    st.markdown(f"**Zadané číslo:** `{st.session_state.get('paleta_id', '')}`")
 
 # ---------- KROK 3 – BD ÁNO/NIE ----------
 elif st.session_state["krok"] == 3:
