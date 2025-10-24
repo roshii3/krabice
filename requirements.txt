@@ -1,1 +1,6 @@
 streamlit
+sqlalchemy
+psycopg2-binary
+python-dotenv
+supabase
+experimental_rerun
