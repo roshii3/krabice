@@ -143,36 +143,32 @@ def screen_home():
                 st.write(rows)
             except Exception as e:
                 st.error(f"Chyba pri načítaní: {e}")
+from pyzbar.pyzbar import decode
+from PIL import Image
 
 def screen_paleta():
     show_topbar(back_visible=True, title="1. Paleta")
-    st.write("Naskenujte číslo palety fotoaparátom alebo zadajte cez numerickú klávesnicu.")
+    st.write("Naskenujte číslo palety cez čiarový kód alebo zadajte cez numerickú klávesnicu.")
+
     col_left, col_right = st.columns([2,1])
     with col_left:
-        img = st.camera_input("Odfotiť etiketu (stlačte do fotoaparátu)", key=f"cam_pal_{st.session_state.form_id}")
+        img = st.camera_input("Odfotiť barcode palety", key=f"cam_pal_{st.session_state.form_id}")
         if img is not None:
             st.session_state.paleta_image = img
             st.image(img, caption="Náhľad skenu")
-            if st.button("Použiť tento sken a pokračovať", key=f"use_pal_img_{st.session_state.form_id}"):
-                # Accept as value (we can't decode automatically)
-                st.session_state.paleta_val = "<SKEN>"  # placeholder, user can edit with keypad
-                go_to("kontrolor")
-                st.experimental_rerun()
-    with col_right:
-        st.markdown("**Číslo palety**")
-        # display readonly field (no OS keyboard) and keypad target
-        st.text_input("", value=st.session_state.paleta_val, key=f"display_pal_{st.session_state.form_id}", disabled=True)
-        if st.button("Zadať číslo (klávesnica)", key=f"enter_pal_{st.session_state.form_id}", use_container_width=True):
-            st.session_state.keypad_target = "paleta_val"
-            st.experimental_rerun()
-    # if keypad target is paleta, show keypad
-    if st.session_state.keypad_target == "paleta_val":
-        st.write("Použite veľkú klávesnicu:")
-        render_keypad()
-        if st.button("Hotovo", key=f"pal_done_{st.session_state.form_id}"):
-            st.session_state.keypad_target = None
-            go_to("kontrolor")
-            st.experimental_rerun()
+            
+            # dekódovanie barcode
+            pil_image = Image.open(img)
+            decoded = decode(pil_image)
+            if decoded:
+                st.session_state.paleta_val = decoded[0].data.decode("utf-8")
+                st.success(f"Číslo palety prečítané: {st.session_state.paleta_val}")
+                if st.button("Pokračovať", key=f"use_pal_img_{st.session_state.form_id}"):
+                    go_to("kontrolor")
+                    st.experimental_rerun()
+            else:
+                st.warning("Nepodarilo sa prečítať čiarový kód. Skúste znovu.")
+
 
 def screen_kontrolor():
     show_topbar(back_visible=True, title="2. Kontrolor")
