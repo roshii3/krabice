@@ -1,139 +1,103 @@
 import streamlit as st
 from supabase import create_client
-import datetime
+from datetime import datetime
 
-# ---------- KONFIGURÁCIA ----------
+# ---------- CONFIG ----------
 DATABAZA_URL = st.secrets["DATABAZA_URL"]
 DATABAZA_KEY = st.secrets["DATABAZA_KEY"]
 databaze = create_client(DATABAZA_URL, DATABAZA_KEY)
 
 st.set_page_config(page_title="Palety", page_icon="📦", layout="centered")
 
-# ---------- FUNKCIE ----------
-def uloz_paletu(data: dict):
-    try:
-        databaze.table("palety").insert(data).execute()
-        st.success("✅ Paleta bola úspešne uložená!")
-    except Exception as e:
-        st.error(f"Chyba pri ukladaní: {e}")
+# ---------- STYLING ----------
+st.markdown("""
+<style>
+.big-button button {height:60px; font-size:26px; background-color:#4CAF50; color:white; width:100%; margin-top:10px;}
+.big-button-red button {height:60px; font-size:26px; background-color:#f44336; color:white; width:100%; margin-top:10px;}
+.big-input input {height:55px; font-size:22px; margin-bottom:10px;}
+.radio-horizontal .stRadio > label {font-size:22px;}
+</style>
+""", unsafe_allow_html=True)
 
-def reset_paletovy_formular():
-    st.session_state.update({
-        "paleta_id": "",
-        "bd_typ": "",
-        "bd_rady": 0,
-        "bd_pocet": 0,
-        "bd_volne": 0,
-        "bd": None,
-        "krok": 1,
-        "meno": ""
-    })
+# ---------- SESSION STATE ----------
+if "kontrolor" not in st.session_state:
+    st.session_state.kontrolor = ""
+if "form_visible" not in st.session_state:
+    st.session_state.form_visible = True
+if "form_key" not in st.session_state:
+    st.session_state.form_key = 0
 
-# ---------- INIT ----------
-if "krok" not in st.session_state:
-    reset_paletovy_formular()
+# ---------- LOGIN ----------
+if not st.session_state.kontrolor:
+    st.session_state.kontrolor = st.text_input("Zadajte meno kontrolóra:")
 
-# ---------- KROK 1 – MENO ----------
-if st.session_state["krok"] == 1:
-    st.title("👷‍♂️ Identifikácia kontrolóra")
-    meno_input = st.text_input("Skenuj QR kód s menom", placeholder="Naskenuj meno...")
-    if st.button("✅ Potvrdiť meno", use_container_width=True):
-        if meno_input:
-            st.session_state["meno"] = meno_input
-            st.session_state["krok"] = 2
-            st.rerun()
-        else:
-            st.warning("Najprv zadaj meno.")
+if st.session_state.kontrolor:
+    st.info(f"Aktuálne prihlásený kontrolor: {st.session_state.kontrolor}")
+    if st.button("Odhlásiť kontrolóra"):
+        st.session_state.kontrolor = ""
+        st.experimental_rerun()
 
-# ---------- KROK 2 – ČÍSLO PALETY S VEĽKOU KLÁVESNICOU ----------
-elif st.session_state["krok"] == 2:
-    st.title("📦 Zadaj číslo palety")
-    st.markdown(f"**Číslo palety:** {st.session_state.get('paleta_id','')}", unsafe_allow_html=True)
+st.write("---")
 
-    # Veľká dotyková klávesnica
-    klavesy = [
-        ["1","2","3"],
-        ["4","5","6"],
-        ["7","8","9"],
-        ["0","❌","✅"]
-    ]
-    for riadok in klavesy:
-        cols = st.columns(3)
-        for i, tlacidlo in enumerate(riadok):
-            if cols[i].button(tlacidlo, use_container_width=True):
-                if tlacidlo.isdigit():
-                    st.session_state["paleta_id"] += tlacidlo
-                elif tlacidlo == "❌":
-                    st.session_state["paleta_id"] = ""
-                elif tlacidlo == "✅":
-                    if st.session_state.get("paleta_id"):
-                        st.session_state["krok"] = 3
-                        st.rerun()
-                    else:
-                        st.warning("Najprv zadaj číslo palety.")
+# ---------- FUNKCIA NA FORM ----------
+def vykresli_formular():
+    key = f"form_{st.session_state.form_key}"
 
-# ---------- KROK 3 – BD ÁNO/NIE ----------
-elif st.session_state["krok"] == 3:
-    st.title("🧱 BD kontrola")
-    st.write("Je na palete BD?")
-    col1, col2 = st.columns(2)
-    if col1.button("✅ ÁNO", use_container_width=True):
-        st.session_state["bd"] = True
-        st.session_state["krok"] = 4
-        st.rerun()
-    if col2.button("❌ NIE", use_container_width=True):
-        st.session_state["bd"] = False
-        st.session_state["krok"] = 5
-        st.rerun()
-    if st.button("🔙 Späť"):
-        st.session_state["krok"] = 2
-        st.rerun()
+    paleta_id = st.text_input("Číslo palety:", key=f"{key}_paleta_id")
+    bd_balenie = st.radio("Ide o BD balenie?", ("Áno", "Nie"), key=f"{key}_bd", horizontal=True)
 
-# ---------- KROK 4 – BD DETAILY ----------
-elif st.session_state["krok"] == 4:
-    st.title("📋 Zadaj údaje o BD")
-    st.session_state["bd_typ"] = st.text_input("Typ BD", value=st.session_state.get("bd_typ",""))
-    st.session_state["bd_rady"] = st.number_input("Počet radov", min_value=0, step=1, value=st.session_state.get("bd_rady",0))
-    st.session_state["bd_pocet"] = st.number_input("Počet v rade", min_value=0, step=1, value=st.session_state.get("bd_pocet",0))
-    st.session_state["bd_volne"] = st.number_input("Voľné miesta", min_value=0, step=1, value=st.session_state.get("bd_volne",0))
+    manual_count = st.checkbox("Chcem zadať presný počet kusov", key=f"{key}_manual")
 
-    colA, colB = st.columns(2)
-    if colA.button("🔙 Späť", use_container_width=True):
-        st.session_state["krok"] = 3
-        st.rerun()
-    if colB.button("✅ Ďalej", use_container_width=True):
-        st.session_state["krok"] = 5
-        st.rerun()
+    typ_bd = None
+    pocet_v_rade = pocet_radov = pocet_volnych = None
+    celkovy_pocet_jednotiek = None
 
-# ---------- KROK 5 – POTVRDENIE ----------
-elif st.session_state["krok"] == 5:
-    st.title("✅ Potvrdenie údajov")
-    st.markdown(f"**Meno:** {st.session_state.get('meno','')}")
-    st.markdown(f"**Paleta:** {st.session_state.get('paleta_id','')}")
-    st.markdown(f"**BD:** {'ÁNO' if st.session_state.get('bd') else 'NIE'}")
-    if st.session_state.get("bd"):
-        st.markdown(f"**Typ BD:** {st.session_state.get('bd_typ','')}")
-        st.markdown(f"**Rady:** {st.session_state.get('bd_rady',0)}")
-        st.markdown(f"**V rade:** {st.session_state.get('bd_pocet',0)}")
-        st.markdown(f"**Voľné:** {st.session_state.get('bd_volne',0)}")
+    if not manual_count:
+        if bd_balenie == "Áno":
+            typ_bd = st.text_input("Zadajte typ BD (napr. BD4, BD6):", key=f"{key}_typ_bd")
+        pocet_v_rade = st.number_input("Počet krabíc v rade:", min_value=1, step=1, key=f"{key}_v_rade")
+        pocet_radov = st.number_input("Počet radov na palete:", min_value=1, step=1, key=f"{key}_radov")
+        pocet_volnych = st.number_input("Počet voľných krabíc navrchu:", min_value=0, step=1, key=f"{key}_volne")
 
-    col1, col2 = st.columns(2)
-    if col1.button("🔙 Späť", use_container_width=True):
-        st.session_state["krok"] = 4 if st.session_state.get("bd") else 3
-        st.rerun()
+        if pocet_v_rade and pocet_radov is not None and pocet_volnych is not None:
+            pocet_krabic = pocet_v_rade * pocet_radov + pocet_volnych
+            celkovy_pocet_jednotiek = pocet_krabic
+            if bd_balenie == "Áno" and typ_bd:
+                try:
+                    celkovy_pocet_jednotiek *= int(typ_bd.replace("BD", ""))
+                except:
+                    st.warning("Nepodarilo sa prečítať BD typ, použité 1x")
+    else:
+        celkovy_pocet_jednotiek = st.number_input("Zadajte presný počet kusov:", min_value=1, step=1, key=f"{key}_exact")
 
-    if col2.button("💾 Uložiť", use_container_width=True):
+    if st.button("💾 Uložiť", key=f"{key}_ulozit", use_container_width=True):
+        if not paleta_id:
+            st.error("Zadajte číslo palety!")
+            return
+
         data = {
-            "datum": datetime.datetime.now().strftime("%d.%m.%Y %H:%M"),
-            "meno": st.session_state.get("meno"),
-            "paleta_id": st.session_state.get("paleta_id"),
-            "bd": st.session_state.get("bd"),
-            "bd_typ": st.session_state.get("bd_typ"),
-            "bd_rady": st.session_state.get("bd_rady"),
-            "bd_pocet": st.session_state.get("bd_pocet"),
-            "bd_volne": st.session_state.get("bd_volne"),
+            "paleta_id": paleta_id,
+            "bd": bd_balenie == "Áno",
+            "typ_bd": typ_bd,
+            "pocet_v_rade": pocet_v_rade,
+            "pocet_radov": pocet_radov,
+            "pocet_volnych": pocet_volnych,
+            "celkovy_pocet_jednotiek": celkovy_pocet_jednotiek,
+            "manual_count": manual_count,
+            "kontrolor": st.session_state.kontrolor,
+            "datum": datetime.now().isoformat()
         }
-        uloz_paletu(data)
-        reset_paletovy_formular()
-        st.success("Nová paleta môže byť naskenovaná.")
-        st.rerun()
+        try:
+            databaze.table("palety").insert(data).execute()
+            st.success(f"Paleta {paleta_id} uložená!")
+            st.session_state.form_visible = False
+        except Exception as e:
+            st.error(f"Chyba pri ukladaní: {e}")
+
+# ---------- FORM / NOVÁ PALETA ----------
+if st.session_state.form_visible:
+    vykresli_formular()
+else:
+    st.button("➕ Nová paleta", on_click=lambda: (
+        st.session_state.update(form_visible=True, form_key=st.session_state.form_key + 1)
+    ), use_container_width=True)
