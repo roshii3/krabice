@@ -41,7 +41,7 @@ if st.session_state["krok"] == 1:
         if meno_input:
             st.session_state["meno"] = meno_input
             st.session_state["krok"] = 2
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.warning("Najprv zadaj meno.")
 
@@ -68,7 +68,7 @@ elif st.session_state["krok"] == 2:
                 elif tlacidlo == "✅":
                     if st.session_state.get("paleta_id"):
                         st.session_state["krok"] = 3
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.warning("Najprv zadaj číslo palety.")
 
@@ -80,14 +80,14 @@ elif st.session_state["krok"] == 3:
     if col1.button("✅ ÁNO", use_container_width=True):
         st.session_state["bd"] = True
         st.session_state["krok"] = 4
-        st.experimental_rerun()
+        st.rerun()
     if col2.button("❌ NIE", use_container_width=True):
         st.session_state["bd"] = False
         st.session_state["krok"] = 5
-        st.experimental_rerun()
+        st.rerun()
     if st.button("🔙 Späť"):
         st.session_state["krok"] = 2
-        st.experimental_rerun()
+        st.rerun()
 
 # ---------- KROK 4 – BD DETAILY ----------
 elif st.session_state["krok"] == 4:
@@ -100,10 +100,10 @@ elif st.session_state["krok"] == 4:
     colA, colB = st.columns(2)
     if colA.button("🔙 Späť", use_container_width=True):
         st.session_state["krok"] = 3
-        st.experimental_rerun()
+        st.rerun()
     if colB.button("✅ Ďalej", use_container_width=True):
         st.session_state["krok"] = 5
-        st.experimental_rerun()
+        st.rerun()
 
 # ---------- KROK 5 – POTVRDENIE ----------
 elif st.session_state["krok"] == 5:
@@ -120,7 +120,7 @@ elif st.session_state["krok"] == 5:
     col1, col2 = st.columns(2)
     if col1.button("🔙 Späť", use_container_width=True):
         st.session_state["krok"] = 4 if st.session_state.get("bd") else 3
-        st.experimental_rerun()
+        st.rerun()
 
     if col2.button("💾 Uložiť", use_container_width=True):
         data = {
@@ -136,4 +136,4 @@ elif st.session_state["krok"] == 5:
         uloz_paletu(data)
         reset_paletovy_formular()
         st.success("Nová paleta môže byť naskenovaná.")
-        st.experimental_rerun()
+        st.rerun()
