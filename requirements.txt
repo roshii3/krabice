@@ -11,3 +11,5 @@ python-dateutil==2.9.0.post0
 # --- Ostatné závislosti, ktoré Supabase vyžaduje ---
 httpx==0.27.2
 cryptography==43.0.1
+pyzbar==0.1.9
+Pillow==10.1.0
