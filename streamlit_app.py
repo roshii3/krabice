@@ -12,7 +12,7 @@ st.set_page_config(page_title="Palety", page_icon="📦", layout="centered")
 # ---------- FUNKCIE ----------
 def uloz_paletu(data: dict):
     try:
-        supabase.table("palety").insert(data).execute()
+        databaze.table("palety").insert(data).execute()
         st.success("✅ Paleta bola úspešne uložená!")
     except Exception as e:
         st.error(f"Chyba pri ukladaní: {e}")
