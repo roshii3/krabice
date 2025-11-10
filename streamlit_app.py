@@ -41,8 +41,13 @@ def vykresli_formular():
     key = f"form_{st.session_state.form_key}"
     
     # Číslo palety
-    paleta_id = st.text_input("Číslo palety:", key=f"{key}_paleta_id")
-    
+      #paleta_id = st.text_input("Číslo palety:", key=f"{key}_paleta_id")
+    # Číslo palety – vhodné pre čiarový kód
+    paleta_id = st.text_input(
+    "Naskenujte čiarový kód palety:",
+    key=f"{key}_paleta_id",
+    placeholder="Naskenujte paletu cez skener..."
+    )
     # 1️⃣ SPÔSOB ZADANIA
     zadanie_typ = st.radio(
         "Ako chce kontrolór zadať počet?",
