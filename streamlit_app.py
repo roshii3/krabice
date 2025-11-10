@@ -1,4 +1,7 @@
 import streamlit as st
+from streamlit_camera_input import camera_input
+from pyzbar.pyzbar import decode
+from PIL import Image
 from supabase import create_client
 from datetime import datetime
 
@@ -6,15 +9,6 @@ from datetime import datetime
 DATABAZA_URL = st.secrets["DATABAZA_URL"]
 DATABAZA_KEY = st.secrets["DATABAZA_KEY"]
 databaze = create_client(DATABAZA_URL, DATABAZA_KEY)
-
-# ---------- STYLING ----------
-st.markdown("""
-<style>
-.big-button button {height:60px; font-size:26px; background-color:#4CAF50; color:white; width:100%; margin-top:10px;}
-.big-input input {height:55px; font-size:22px; margin-bottom:10px;}
-.radio-horizontal .stRadio > label {font-size:22px;}
-</style>
-""", unsafe_allow_html=True)
 
 # ---------- SESSION ----------
 if "kontrolor" not in st.session_state:
@@ -39,29 +33,37 @@ st.write("---")
 # ---------- FORM ----------
 def vykresli_formular():
     key = f"form_{st.session_state.form_key}"
-    
-    # Číslo palety
-      #paleta_id = st.text_input("Číslo palety:", key=f"{key}_paleta_id")
-    # Číslo palety – vhodné pre čiarový kód
-    paleta_id = st.text_input(
-    "Naskenujte čiarový kód palety:",
-    key=f"{key}_paleta_id",
-    placeholder="Naskenujte paletu cez skener..."
-    )
-    # 1️⃣ SPÔSOB ZADANIA
+
+    # 1️⃣ Skenovanie čiarového kódu cez kameru
+    st.write("📷 Naskenujte čiarový kód palety:")
+    img = camera_input("Scan barcode", key=f"{key}_camera")
+
+    paleta_id = ""
+    if img:
+        # Dekódovanie čiarového kódu
+        pil_image = Image.fromarray(img)
+        decoded_objects = decode(pil_image)
+        if decoded_objects:
+            paleta_id = decoded_objects[0].data.decode("utf-8")
+            st.success(f"Paleta naskenovaná: {paleta_id}")
+
+    if not paleta_id:
+        st.warning("Prosím, naskenujte paletu.")
+
+    # 2️⃣ Spôsob zadania
     zadanie_typ = st.radio(
         "Ako chce kontrolór zadať počet?",
         ("Manuálne", "Výpočet podľa vrstiev"),
         key=f"{key}_zadanie",
         horizontal=True
     )
-    
-    # 2️⃣ BD INFORMÁCIA (vždy)
+
+    # 3️⃣ BD info
     bd_balenie = st.radio("Ide o BD balenie?", ("Áno", "Nie"), key=f"{key}_bd", horizontal=True)
     bd = True if bd_balenie == "Áno" else False
     typ_bd = st.text_input("Typ BD (napr. BD4, BD6):", key=f"{key}_typ_bd") if bd else None
 
-    # 3️⃣ Zadanie počtu
+    # 4️⃣ Zadanie počtu
     manual_count = None
     celkovy_pocet_jednotiek = None
     pocet_v_rade = pocet_radov = pocet_volnych = None
@@ -75,17 +77,16 @@ def vykresli_formular():
 
         pocet_krabic = pocet_v_rade * pocet_radov + pocet_volnych
         celkovy_pocet_jednotiek = pocet_krabic
-
         if bd and typ_bd:
             try:
                 celkovy_pocet_jednotiek *= int(typ_bd.replace("BD", ""))
             except:
                 st.warning("Nepodarilo sa rozpoznať typ BD, použité 1x")
 
-    # 4️⃣ ULOŽENIE
+    # 5️⃣ Uloženie
     if st.button("💾 Uložiť", key=f"{key}_ulozit", use_container_width=True):
         if not paleta_id:
-            st.error("Zadajte číslo palety!")
+            st.error("Čiarový kód palety nie je naskenovaný!")
             return
 
         data = {
@@ -103,8 +104,6 @@ def vykresli_formular():
 
         try:
             databaze.table("palety").insert(data).execute()
-
-            # Log
             databaze.table("palety_log").insert({
                 "paleta_id": paleta_id,
                 "akcia": f"Paleta {paleta_id} vytvorená ({'BD' if bd else 'non-BD'}, {zadanie_typ.lower()})",
