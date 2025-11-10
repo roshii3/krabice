@@ -5,3 +5,6 @@ postgrest==0.15.0
 realtime==1.0.3
 storage3==0.6.0
 python-dotenv==1.0.1
+opencv-python>=4.7.0
+pyzbar>=0.1.9
+Pillow>=10.0.0
