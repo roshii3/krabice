@@ -1,2 +1,5 @@
-streamlit>=1.25.0
-supabase>=1.0.0
+
+
+streamlit
+supabase
+python-dotenv
