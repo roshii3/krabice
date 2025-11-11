@@ -1,101 +1,69 @@
 import streamlit as st
-from supabase import create_client
+from supabase import create_client, Client
 from datetime import datetime
 
-# ---------- KONFIGURÁCIA ----------
-DATABAZA_URL = st.secrets["DATABAZA_URL"]
-DATABAZA_KEY = st.secrets["DATABAZA_KEY"]
-databaze = create_client(DATABAZA_URL, DATABAZA_KEY)
+# --------------------------
+# Supabase konfigurácia
+# --------------------------
+url = "https://TVOJ_SUPABASE_URL.supabase.co"
+key = "TVOJ_SUPABASE_API_KEY"
+supabase: Client = create_client(url, key)
 
-# ---------- STYL ----------
-st.markdown("""
-<style>
-.big-button button {height:60px; font-size:24px; background-color:#4CAF50; color:white; width:100%; margin-top:10px;}
-.big-input input {height:55px; font-size:22px; margin-bottom:10px;}
-.radio-horizontal .stRadio > label {font-size:22px;}
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="Paletový záznam", page_icon="📦", layout="centered")
 
-# ---------- SESSION ----------
-if "kontrolor" not in st.session_state:
-    st.session_state.kontrolor = ""
+st.title("📦 Záznam palety")
 
-if not st.session_state.kontrolor:
-    st.session_state.kontrolor = st.text_input("👷‍♂️ Zadajte meno kontrolóra:")
+# --------------------------
+# Základné údaje
+# --------------------------
+st.subheader("Základné údaje")
 
-if st.session_state.kontrolor:
-    st.info(f"Prihlásený kontrolór: **{st.session_state.kontrolor}**")
-    if st.button("Odhlásiť"):
-        st.session_state.kontrolor = ""
-        st.rerun()
+paleta_id = st.text_input("Paleta ID (z čítačky čiarového kódu):")
 
-st.write("---")
+typ_bd = st.selectbox("Je to BD?", ["Áno", "Nie"])
+bd = True if typ_bd == "Áno" else False
 
-# ---------- FORMULÁR ----------
-def vykresli_formular():
-    st.subheader("🧾 Nová paleta")
+manual_mode = st.radio("Ako chceš zadať počet jednotiek?", ["Automaticky (výpočet)", "Manuálne"])
 
-    # Číslo palety (naskenované čítačkou)
-    paleta_id = st.text_input("Číslo palety (naskenujte čiarový kód):", key="paleta_id")
+# --------------------------
+# Výpočet alebo manuálny vstup
+# --------------------------
+if manual_mode == "Automaticky (výpočet)":
+    pocet_v_rade = st.number_input("Počet v rade", min_value=1, step=1)
+    pocet_radov = st.number_input("Počet radov", min_value=1, step=1)
+    pocet_volnych = st.number_input("Počet voľných jednotiek (ak sú)", min_value=0, step=1)
 
+    celkovy_pocet_jednotiek = (pocet_v_rade * pocet_radov) + pocet_volnych
+else:
+    celkovy_pocet_jednotiek = st.number_input("Zadaj celkový počet jednotiek manuálne", min_value=1, step=1)
+
+kontrolor = st.text_input("Meno kontrolóra:")
+datum = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# --------------------------
+# Uloženie do DB
+# --------------------------
+if st.button("💾 Uložiť záznam"):
     if not paleta_id:
-        st.info("👉 Naskenujte čiarový kód alebo zadajte číslo palety.")
-        return
-
-    # Spôsob zadania počtu
-    zadanie_typ = st.radio(
-        "Ako chcete zadať počet jednotiek?",
-        ("Manuálne", "Výpočet podľa vrstiev"),
-        key="zadanie_typ",
-        horizontal=True
-    )
-
-    # BD balenie
-    bd_balenie = st.radio("Ide o BD balenie?", ("Áno", "Nie"), horizontal=True)
-    bd = bd_balenie == "Áno"
-    typ_bd = st.text_input("Typ BD (napr. BD4, BD6):", key="typ_bd") if bd else None
-
-    manual_count = None
-    celkovy_pocet_jednotiek = None
-
-    if zadanie_typ == "Manuálne":
-        manual_count = st.number_input("Zadajte počet jednotiek:", min_value=0, step=1, key="manual_count")
-        celkovy_pocet_jednotiek = manual_count
+        st.warning("⚠️ Zadaj ID palety (oskenuj čiarový kód).")
+    elif not kontrolor:
+        st.warning("⚠️ Zadaj meno kontrolóra.")
     else:
-        pocet_v_rade = st.number_input("Počet krabíc v rade:", min_value=1, step=1, key="v_rade")
-        pocet_radov = st.number_input("Počet radov na palete:", min_value=1, step=1, key="radov")
-        pocet_volnych = st.number_input("Počet voľných krabíc navrchu:", min_value=0, step=1, key="volne")
-        celkovy_pocet_jednotiek = pocet_v_rade * pocet_radov + pocet_volnych
-
-        if bd and typ_bd:
-            try:
-                celkovy_pocet_jednotiek *= int(typ_bd.replace("BD", ""))
-            except:
-                st.warning("⚠️ Nepodarilo sa rozpoznať typ BD, použité 1x")
-
-    if st.button("💾 Uložiť paletu", use_container_width=True):
-        if not paleta_id:
-            st.error("❌ Zadajte alebo naskenujte číslo palety!")
-            return
-
         data = {
             "paleta_id": paleta_id,
             "bd": bd,
             "typ_bd": typ_bd,
-            "pocet_v_rade": None,
-            "pocet_radov": None,
-            "pocet_volnych": None,
+            "pocet_v_rade": None if manual_mode == "Manuálne" else pocet_v_rade,
+            "pocet_radov": None if manual_mode == "Manuálne" else pocet_radov,
+            "pocet_volnych": None if manual_mode == "Manuálne" else pocet_volnych,
             "celkovy_pocet_jednotiek": celkovy_pocet_jednotiek,
-            "manual_count": manual_count,
-            "kontrolor": st.session_state.kontrolor,
-            "datum": datetime.now().isoformat()
+            "manual_count": (manual_mode == "Manuálne"),
+            "kontrolor": kontrolor,
+            "datum": datum
         }
 
         try:
-            databaze.table("palety").insert(data).execute()
-            st.success(f"✅ Paleta **{paleta_id}** bola uložená do databázy!")
+            supabase.table("palety").insert(data).execute()
+            st.success("✅ Záznam úspešne uložený.")
         except Exception as e:
-            st.error("⚠️ Chyba pri ukladaní do databázy!")
-            st.write(e)
-
-vykresli_formular()
+            st.error(f"⚠️ Chyba pri ukladaní do databázy: {e}")
