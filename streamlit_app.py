@@ -19,8 +19,6 @@ st.markdown("""
 # ---------- SESSION ----------
 if "kontrolor" not in st.session_state:
     st.session_state.kontrolor = ""
-if "refresh" not in st.session_state:
-    st.session_state.refresh = False
 
 # ---------- LOGIN ----------
 if not st.session_state.kontrolor:
@@ -34,21 +32,32 @@ if st.session_state.kontrolor:
 
 st.write("---")
 
+# ---------- FUNKCIA NA RESET FORMULÁRA ----------
+def reset_form():
+    keys_to_clear = ["paleta_id", "zadanie_typ", "bd_balenie", "typ_bd", 
+                     "manual_count", "v_rade", "radov", "volne"]
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+
 # ---------- FORMULÁR ----------
 def vykresli_formular():
     st.subheader("🧾 Nová paleta")
+
+    # Tlačidlo pre novú paletu
+    if st.button("➕ Nová paleta"):
+        reset_form()
 
     paleta_id = st.text_input("Číslo palety (naskenujte čiarový kód):", key="paleta_id")
     if not paleta_id:
         st.info("👉 Naskenujte čiarový kód alebo zadajte číslo palety.")
         return
 
-    zadanie_typ = st.radio(
-        "Ako chcete zadať počet jednotiek?", 
-        ("Manuálne", "Výpočet podľa vrstiev"), 
-        horizontal=True
-    )
-    bd_balenie = st.radio("Ide o BD balenie?", ("Áno", "Nie"), horizontal=True)
+    zadanie_typ = st.radio("Ako chcete zadať počet jednotiek?", 
+                            ("Manuálne", "Výpočet podľa vrstiev"), 
+                            horizontal=True, key="zadanie_typ")
+    
+    bd_balenie = st.radio("Ide o BD balenie?", ("Áno", "Nie"), horizontal=True, key="bd_balenie")
     bd = bd_balenie == "Áno"
     typ_bd = st.text_input("Typ BD (napr. BD4, BD6):", key="typ_bd") if bd else None
 
@@ -90,16 +99,10 @@ def vykresli_formular():
         try:
             databaze.table("palety").insert(data).execute()
             st.success(f"✅ Paleta **{paleta_id}** bola uložená!")
-            st.session_state.refresh = True  # nastavíme flag na reload
-
+            # reset formulára okrem kontrolóra
+            reset_form()
         except Exception as e:
             st.error("⚠️ Chyba pri ukladaní!")
             st.write(e)
 
 vykresli_formular()
-
-# ---------- AUTOMATICKÝ RELOAD ----------
-if st.session_state.refresh:
-    st.info("Stránka sa obnoví automaticky...")
-    st.session_state.refresh = False
-    st.rerun()
