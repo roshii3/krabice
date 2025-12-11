@@ -17,7 +17,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- LOGIN ----------
+# ---------- SESSION ----------
 if "kontrolor" not in st.session_state:
     st.session_state.kontrolor = ""
 
@@ -88,10 +88,11 @@ def vykresli_formular():
                 databaze.table("palety").insert(data).execute()
                 st.success(f"✅ Paleta **{paleta_id}** bola uložená!")
 
-                # ---------- simulácia reload po 2 sekundách ----------
+                # ---------- automatický reload po 2 sekundách ----------
+                st.info("Stránka sa obnoví za 2 sekundy...")
                 time.sleep(2)
                 placeholder.empty()  # vymažeme formulár
-                st.experimental_rerun()  # znovu načítame celú stránku
+                st.rerun()  # reload stránky
 
             except Exception as e:
                 st.error("⚠️ Chyba pri ukladaní!")
