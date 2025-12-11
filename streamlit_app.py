@@ -1,6 +1,7 @@
 import streamlit as st
 from supabase import create_client
 from datetime import datetime
+import time
 
 # ---------- KONFIGURÁCIA ----------
 DATABAZA_URL = st.secrets["DATABAZA_URL"]
@@ -16,61 +17,34 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- SESSION ----------
+# ---------- LOGIN ----------
 if "kontrolor" not in st.session_state:
     st.session_state.kontrolor = ""
 
-if "reset" not in st.session_state:
-    st.session_state.reset = False
-# ---------- FUNKCIA: RESET FORMULÁRA ----------
-
-def reset_form():
-    for key in ["paleta_id", "zadanie_typ", "manual_count", "v_rade", "radov", "volne", "typ_bd"]:
-        if key in st.session_state:
-            del st.session_state[key]
-
-    st.session_state.reset = True
-
-
-
-
-
-# ---------- PRIHLÁSENIE ----------
 if not st.session_state.kontrolor:
     st.session_state.kontrolor = st.text_input("👷‍♂️ Zadajte meno kontrolóra:")
 
 if st.session_state.kontrolor:
     st.info(f"Prihlásený kontrolór: **{st.session_state.kontrolor}**")
-    if st.button("Odhlásiť"):
+    if st.button("Odhlásiť kontrolóra"):
         st.session_state.kontrolor = ""
-        st.rerun()
+        st.experimental_rerun()
 
 st.write("---")
-
 
 # ---------- FORMULÁR ----------
 def vykresli_formular():
     st.subheader("🧾 Nová paleta")
 
-    paleta_id = st.text_input(
-        "Číslo palety (naskenujte čiarový kód):",
-        key="paleta_id"
-    )
+    paleta_id = st.text_input("Číslo palety (naskenujte čiarový kód):", key="paleta_id")
 
     if not paleta_id:
         st.info("👉 Naskenujte čiarový kód alebo zadajte číslo palety.")
         return
 
-    zadanie_typ = st.radio(
-        "Ako chcete zadať počet jednotiek?",
-        ("Manuálne", "Výpočet podľa vrstiev"),
-        key="zadanie_typ",
-        horizontal=True
-    )
-
+    zadanie_typ = st.radio("Ako chcete zadať počet jednotiek?", ("Manuálne", "Výpočet podľa vrstiev"), horizontal=True)
     bd_balenie = st.radio("Ide o BD balenie?", ("Áno", "Nie"), horizontal=True)
     bd = bd_balenie == "Áno"
-
     typ_bd = st.text_input("Typ BD (napr. BD4, BD6):", key="typ_bd") if bd else None
 
     manual_count = None
@@ -85,7 +59,6 @@ def vykresli_formular():
         pocet_volnych = st.number_input("Počet voľných krabíc navrchu:", min_value=0, step=1, key="volne")
 
         celkovy_pocet = pocet_v_rade * pocet_radov + pocet_volnych
-
         if bd and typ_bd:
             try:
                 celkovy_pocet *= int(typ_bd.replace("BD", ""))
@@ -93,8 +66,8 @@ def vykresli_formular():
                 st.warning("⚠️ Nepodarilo sa rozpoznať typ BD, použitá hodnota 1x")
 
     if st.button("💾 Uložiť paletu", use_container_width=True):
-        if not paleta_id:
-            st.error("❌ Zadajte alebo naskenujte číslo palety!")
+        if not paleta_id or st.session_state.kontrolor == "":
+            st.error("❌ Zadajte číslo palety a meno kontrolóra!")
             return
 
         data = {
@@ -113,22 +86,20 @@ def vykresli_formular():
         try:
             databaze.table("palety").insert(data).execute()
             st.success(f"✅ Paleta **{paleta_id}** bola uložená!")
-            reset_form()      # nastavíme signál na reset
+
+            # -------------------------------
+            # automatický reload po 2 sekundách
+            st.markdown("""
+                <script>
+                setTimeout(function(){
+                    window.location.reload();
+                }, 2000);
+                </script>
+            """, unsafe_allow_html=True)
+            # -------------------------------
+
         except Exception as e:
             st.error("⚠️ Chyba pri ukladaní!")
             st.write(e)
 
-    # Tlačidlo – NOVÁ PALETA
-    if st.button("🆕 Nová paleta", use_container_width=True):
-        reset_form()
-
-
 vykresli_formular()
-
-# ---------- RERUN NA KONCI ----------
-if st.session_state.get("reset", False):
-    st.session_state.reset = False
-    st.rerun()
-
-
-
