@@ -32,19 +32,20 @@ if st.session_state.kontrolor:
 
 st.write("---")
 
-
 # ---------- FUNKCIA NA RESET FORMULÁRA ----------
 def reset_form():
-    # všetky kľúče resetujeme na prázdne hodnoty / None
-    st.session_state["paleta_id"] = ""
-    st.session_state["zadanie_typ"] = "Manuálne"
-    st.session_state["bd_balenie"] = "Nie"
-    st.session_state["typ_bd"] = ""
-    st.session_state["manual_count"] = 0
-    st.session_state["v_rade"] = 1
-    st.session_state["radov"] = 1
-    st.session_state["volne"] = 0
-
+    for key, default in {
+        "zadanie_typ": "Manuálne",
+        "bd_balenie": "Nie",
+        "typ_bd": "",
+        "manual_count": 0,
+        "v_rade": 1,
+        "radov": 1,
+        "volne": 0
+    }.items():
+        st.session_state[key] = default
+    # paleta_id sa tiež resetuje cez predvolenú hodnotu pri renderi text_input
+    # kontrolor sa nezmení
 
 # ---------- FORMULÁR ----------
 def vykresli_formular():
@@ -54,7 +55,10 @@ def vykresli_formular():
     if st.button("➕ Nová paleta"):
         reset_form()
 
-    paleta_id = st.text_input("Číslo palety (naskenujte čiarový kód):", key="paleta_id")
+    # Text input paleta_id s predvolenou hodnotou zo session_state
+    paleta_id_value = st.session_state.get("paleta_id", "")
+    paleta_id = st.text_input("Číslo palety (naskenujte čiarový kód):",
+                              key="paleta_id", value=paleta_id_value)
     if not paleta_id:
         st.info("👉 Naskenujte čiarový kód alebo zadajte číslo palety.")
         return
