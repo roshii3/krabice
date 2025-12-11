@@ -26,14 +26,24 @@ if not st.session_state.kontrolor:
 if st.session_state.kontrolor:
     st.info(f"Prihlásený kontrolór: **{st.session_state.kontrolor}**")
     if st.button("Odhlásiť"):
-        st.session_state.kontrolor = ""
+        st.session_state.clear()
         st.rerun()
 
 st.write("---")
 
+# ---------- RESET FORMULÁRA ----------
+def reset_form():
+    kontrolor = st.session_state.kontrolor
+    st.session_state.clear()
+    st.session_state.kontrolor = kontrolor
+    st.rerun()
+
 # ---------- FORMULÁR ----------
 def vykresli_formular():
     st.subheader("🧾 Nová paleta")
+
+    # Tlačidlo pre reset
+    st.button("🔄 Nová paleta", on_click=reset_form)
 
     # Číslo palety (naskenované čítačkou)
     paleta_id = st.text_input("Číslo palety (naskenujte čiarový kód):", key="paleta_id")
@@ -94,8 +104,12 @@ def vykresli_formular():
         try:
             databaze.table("palety").insert(data).execute()
             st.success(f"✅ Paleta **{paleta_id}** bola uložená do databázy!")
+
+            reset_form()
+
         except Exception as e:
             st.error("⚠️ Chyba pri ukladaní do databázy!")
             st.write(e)
+
 
 vykresli_formular()
