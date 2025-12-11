@@ -30,7 +30,7 @@ if st.session_state.kontrolor:
     st.info(f"Prihlásený kontrolór: **{st.session_state.kontrolor}**")
     if st.button("Odhlásiť kontrolóra"):
         st.session_state.kontrolor = ""
-        st.experimental_rerun()
+        st.rerun()
 
 st.write("---")
 
@@ -43,7 +43,11 @@ def vykresli_formular():
         st.info("👉 Naskenujte čiarový kód alebo zadajte číslo palety.")
         return
 
-    zadanie_typ = st.radio("Ako chcete zadať počet jednotiek?", ("Manuálne", "Výpočet podľa vrstiev"), horizontal=True)
+    zadanie_typ = st.radio(
+        "Ako chcete zadať počet jednotiek?", 
+        ("Manuálne", "Výpočet podľa vrstiev"), 
+        horizontal=True
+    )
     bd_balenie = st.radio("Ide o BD balenie?", ("Áno", "Nie"), horizontal=True)
     bd = bd_balenie == "Áno"
     typ_bd = st.text_input("Typ BD (napr. BD4, BD6):", key="typ_bd") if bd else None
@@ -98,4 +102,4 @@ vykresli_formular()
 if st.session_state.refresh:
     st.info("Stránka sa obnoví automaticky...")
     st.session_state.refresh = False
-    st.experimental_rerun()
+    st.rerun()
