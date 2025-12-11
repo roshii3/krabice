@@ -31,6 +31,7 @@ if st.session_state.kontrolor:
 
 st.write("---")
 
+
 # ---------- RESET FORMULÁRA ----------
 def reset_form():
     kontrolor = st.session_state.kontrolor
@@ -38,21 +39,21 @@ def reset_form():
     st.session_state.kontrolor = kontrolor
     st.rerun()
 
+
 # ---------- FORMULÁR ----------
 def vykresli_formular():
     st.subheader("🧾 Nová paleta")
 
-    # Tlačidlo pre reset
-    st.button("🔄 Nová paleta", on_click=reset_form)
+    # RESET tlačidlo – funguje vždy
+    if st.button("🔄 Nová paleta"):
+        reset_form()
 
-    # Číslo palety (naskenované čítačkou)
     paleta_id = st.text_input("Číslo palety (naskenujte čiarový kód):", key="paleta_id")
 
     if not paleta_id:
         st.info("👉 Naskenujte čiarový kód alebo zadajte číslo palety.")
         return
 
-    # Spôsob zadania počtu
     zadanie_typ = st.radio(
         "Ako chcete zadať počet jednotiek?",
         ("Manuálne", "Výpočet podľa vrstiev"),
@@ -60,7 +61,6 @@ def vykresli_formular():
         horizontal=True
     )
 
-    # BD balenie
     bd_balenie = st.radio("Ide o BD balenie?", ("Áno", "Nie"), horizontal=True)
     bd = bd_balenie == "Áno"
     typ_bd = st.text_input("Typ BD (napr. BD4, BD6):", key="typ_bd") if bd else None
@@ -103,12 +103,11 @@ def vykresli_formular():
 
         try:
             databaze.table("palety").insert(data).execute()
-            st.success(f"✅ Paleta **{paleta_id}** bola uložená do databázy!")
-
+            st.success(f"✅ Paleta {paleta_id} bola uložená!")
             reset_form()
 
         except Exception as e:
-            st.error("⚠️ Chyba pri ukladaní do databázy!")
+            st.error("⚠️ Chyba pri ukladaní!")
             st.write(e)
 
 
