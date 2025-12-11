@@ -32,13 +32,19 @@ if st.session_state.kontrolor:
 
 st.write("---")
 
+
 # ---------- FUNKCIA NA RESET FORMULÁRA ----------
 def reset_form():
-    keys_to_clear = ["paleta_id", "zadanie_typ", "bd_balenie", "typ_bd", 
-                     "manual_count", "v_rade", "radov", "volne"]
-    for key in keys_to_clear:
-        if key in st.session_state:
-            del st.session_state[key]
+    # všetky kľúče resetujeme na prázdne hodnoty / None
+    st.session_state["paleta_id"] = ""
+    st.session_state["zadanie_typ"] = "Manuálne"
+    st.session_state["bd_balenie"] = "Nie"
+    st.session_state["typ_bd"] = ""
+    st.session_state["manual_count"] = 0
+    st.session_state["v_rade"] = 1
+    st.session_state["radov"] = 1
+    st.session_state["volne"] = 0
+
 
 # ---------- FORMULÁR ----------
 def vykresli_formular():
