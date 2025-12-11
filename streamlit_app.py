@@ -22,18 +22,17 @@ if "kontrolor" not in st.session_state:
 
 if "reset" not in st.session_state:
     st.session_state.reset = False
-
-
 # ---------- FUNKCIA: RESET FORMULÁRA ----------
+
 def reset_form():
-    st.session_state.paleta_id = ""
-    st.session_state.zadanie_typ = "Manuálne"
-    st.session_state.manual_count = 0
-    st.session_state.v_rade = 1
-    st.session_state.radov = 1
-    st.session_state.volne = 0
-    st.session_state.typ_bd = ""
+    for key in ["paleta_id", "zadanie_typ", "manual_count", "v_rade", "radov", "volne", "typ_bd"]:
+        if key in st.session_state:
+            del st.session_state[key]
+
     st.session_state.reset = True
+
+
+
 
 
 # ---------- PRIHLÁSENIE ----------
@@ -127,6 +126,9 @@ def vykresli_formular():
 vykresli_formular()
 
 # ---------- RERUN NA KONCI ----------
-if st.session_state.reset:
+if st.session_state.get("reset", False):
     st.session_state.reset = False
     st.rerun()
+
+
+
