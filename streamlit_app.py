@@ -10,15 +10,23 @@ databaze = create_client(DATABAZA_URL, DATABAZA_KEY)
 # ---------- STYL ----------
 st.markdown("""
 <style>
-.big-button button {height:60px; font-size:24px; background-color:#4CAF50; color:white; width:100%; margin-top:10px;}
-.big-input input {height:55px; font-size:22px; margin-bottom:10px;}
-.radio-horizontal .stRadio > label {font-size:22px;}
+.big-button button {
+    height:60px;
+    font-size:24px;
+    background-color:#4CAF50;
+    color:white;
+    width:100%;
+    margin-top:10px;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------- SESSION ----------
 if "kontrolor" not in st.session_state:
     st.session_state.kontrolor = ""
+
+if "form_key" not in st.session_state:
+    st.session_state.form_key = 0
 
 # ---------- LOGIN ----------
 if not st.session_state.kontrolor:
@@ -28,71 +36,91 @@ if st.session_state.kontrolor:
     st.info(f"Prihlásený kontrolór: **{st.session_state.kontrolor}**")
     if st.button("Odhlásiť kontrolóra"):
         st.session_state.kontrolor = ""
+        st.session_state.form_key += 1
         st.rerun()
 
 st.write("---")
-
-# ---------- FUNKCIA NA RESET FORMULÁRA ----------
-def reset_form():
-    for key, default in {
-        "zadanie_typ": "Manuálne",
-        "bd_balenie": "Nie",
-        "typ_bd": "",
-        "manual_count": 0,
-        "v_rade": 1,
-        "radov": 1,
-        "volne": 0
-    }.items():
-        st.session_state[key] = default
-    # paleta_id sa tiež resetuje cez predvolenú hodnotu pri renderi text_input
-    # kontrolor sa nezmení
 
 # ---------- FORMULÁR ----------
 def vykresli_formular():
     st.subheader("🧾 Nová paleta")
 
-    # Tlačidlo pre novú paletu
+    # 🔁 NOVÁ PALETA = nový form_key
     if st.button("➕ Nová paleta"):
-        reset_form()
+        st.session_state.form_key += 1
+        st.rerun()
 
-    # Text input paleta_id s predvolenou hodnotou zo session_state
-    paleta_id_value = st.session_state.get("paleta_id", "")
-    paleta_id = st.text_input("Číslo palety (naskenujte čiarový kód):",
-                              key="paleta_id", value=paleta_id_value)
+    key = f"form_{st.session_state.form_key}"
+
+    paleta_id = st.text_input(
+        "Číslo palety (naskenujte čiarový kód):",
+        key=f"{key}_paleta"
+    )
+
     if not paleta_id:
-        st.info("👉 Naskenujte čiarový kód alebo zadajte číslo palety.")
+        st.info("👉 Naskenujte čiarový kód palety.")
         return
 
-    zadanie_typ = st.radio("Ako chcete zadať počet jednotiek?", 
-                            ("Manuálne", "Výpočet podľa vrstiev"), 
-                            horizontal=True, key="zadanie_typ")
-    
-    bd_balenie = st.radio("Ide o BD balenie?", ("Áno", "Nie"), horizontal=True, key="bd_balenie")
+    zadanie_typ = st.radio(
+        "Ako chcete zadať počet jednotiek?",
+        ("Manuálne", "Výpočet podľa vrstiev"),
+        horizontal=True,
+        key=f"{key}_typ"
+    )
+
+    bd_balenie = st.radio(
+        "Ide o BD balenie?",
+        ("Áno", "Nie"),
+        horizontal=True,
+        key=f"{key}_bd"
+    )
+
     bd = bd_balenie == "Áno"
-    typ_bd = st.text_input("Typ BD (napr. BD4, BD6):", key="typ_bd") if bd else None
+    typ_bd = (
+        st.text_input("Typ BD (napr. BD4, BD6):", key=f"{key}_typbd")
+        if bd else None
+    )
 
     manual_count = None
     celkovy_pocet = None
 
     if zadanie_typ == "Manuálne":
-        manual_count = st.number_input("Zadajte počet jednotiek:", min_value=0, step=1, key="manual_count")
+        manual_count = st.number_input(
+            "Zadajte počet jednotiek:",
+            min_value=0,
+            step=1,
+            key=f"{key}_manual"
+        )
         celkovy_pocet = manual_count
     else:
-        pocet_v_rade = st.number_input("Počet krabíc v rade:", min_value=1, step=1, key="v_rade")
-        pocet_radov = st.number_input("Počet radov na palete:", min_value=1, step=1, key="radov")
-        pocet_volnych = st.number_input("Počet voľných krabíc navrchu:", min_value=0, step=1, key="volne")
-        celkovy_pocet = pocet_v_rade * pocet_radov + pocet_volnych
+        v_rade = st.number_input(
+            "Počet krabíc v rade:",
+            min_value=1,
+            step=1,
+            key=f"{key}_vrade"
+        )
+        radov = st.number_input(
+            "Počet radov na palete:",
+            min_value=1,
+            step=1,
+            key=f"{key}_radov"
+        )
+        volne = st.number_input(
+            "Počet voľných krabíc navrchu:",
+            min_value=0,
+            step=1,
+            key=f"{key}_volne"
+        )
+
+        celkovy_pocet = v_rade * radov + volne
+
         if bd and typ_bd:
             try:
                 celkovy_pocet *= int(typ_bd.replace("BD", ""))
             except:
-                st.warning("⚠️ Nepodarilo sa rozpoznať typ BD, použitá hodnota 1x")
+                st.warning("⚠️ Neplatný BD typ, použité 1x")
 
     if st.button("💾 Uložiť paletu", use_container_width=True):
-        if not paleta_id or st.session_state.kontrolor == "":
-            st.error("❌ Zadajte číslo palety a meno kontrolóra!")
-            return
-
         data = {
             "paleta_id": paleta_id,
             "bd": bd,
@@ -108,11 +136,14 @@ def vykresli_formular():
 
         try:
             databaze.table("palety").insert(data).execute()
-            st.success(f"✅ Paleta **{paleta_id}** bola uložená!")
-            # reset formulára okrem kontrolóra
-            reset_form()
+            st.success(f"✅ Paleta **{paleta_id}** uložená")
+
+            # 🔁 RESET FORMULÁRA
+            st.session_state.form_key += 1
+            st.rerun()
+
         except Exception as e:
-            st.error("⚠️ Chyba pri ukladaní!")
+            st.error("❌ Chyba pri ukladaní")
             st.write(e)
 
 vykresli_formular()
