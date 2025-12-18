@@ -1,7 +1,15 @@
 import streamlit as st
 from supabase import create_client
 from datetime import datetime
-
+# Skrytie hamburger menu a footeru
+hide_menu = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_menu, unsafe_allow_html=True)
 # ---------- KONFIGURÁCIA ----------
 DATABAZA_URL = st.secrets["DATABAZA_URL"]
 DATABAZA_KEY = st.secrets["DATABAZA_KEY"]
